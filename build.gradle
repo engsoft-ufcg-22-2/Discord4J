@@ -61,6 +61,11 @@ allprojects {
         api "com.discord4j:discord-json:$discordJsonVersion"
     }
 
+    test {
+        useJUnitPlatform()
+
+    }
+
     repositories {
         mavenLocal()
         mavenCentral()
