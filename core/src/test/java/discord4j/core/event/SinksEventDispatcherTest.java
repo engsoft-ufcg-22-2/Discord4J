@@ -114,7 +114,7 @@ class SinksEventDispatcherTest {
         Function<Sinks.ManySpec, Sinks.Many<Event>> eventSinkFactory = mock(Function.class);
         when(eventSinkFactory.apply(Mockito.<Sinks.ManySpec>any())).thenReturn(EmitterProcessor.create(3, true));
         EmissionStrategy emissionStrategy = mock(EmissionStrategy.class);
-        (new SinksEventDispatcher(eventSinkFactory, emissionStrategy, VirtualTimeScheduler.create(true))).on(null);
+        (new SinksEventDispatcher(eventSinkFactory, emissionStrategy, VirtualTimeScheduler.create(true))).on((Class<Event>) null);
     }
 
     /**
