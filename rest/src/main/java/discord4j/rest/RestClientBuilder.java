@@ -289,7 +289,7 @@ public class RestClientBuilder<C, O extends RouterOptions> {
         return RequestQueueFactory.buffering();
     }
 
-    protected static class Config {
+    public static class Config {
 
         private final String token;
         private final ReactorResources reactorResources;
