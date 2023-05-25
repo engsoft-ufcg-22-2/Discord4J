@@ -4,6 +4,7 @@ dependencies {
     api project(':voice')
 
     api "com.discord4j:stores-jdk:$storesVersion"
+    testImplementation 'junit:junit:4.12'
 
     compileOnly "$immutables_group:value:$immutables_version"
     compileOnly "$immutables_group:builder:$immutables_version"
