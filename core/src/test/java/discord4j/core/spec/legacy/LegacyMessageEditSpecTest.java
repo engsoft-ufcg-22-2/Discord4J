@@ -227,7 +227,7 @@ class LegacyMessageEditSpecTest {
         //     LegacyMessageEditSpec.embeds
         //     LegacyMessageEditSpec.flags
 
-        (new LegacyMessageEditSpec()).setFlags(null);
+        (new LegacyMessageEditSpec()).setFlags((Message.Flag) null);
     }
 
     /**
@@ -283,7 +283,7 @@ class LegacyMessageEditSpecTest {
 
         LegacyMessageEditSpec legacyMessageEditSpec = new LegacyMessageEditSpec();
         legacyMessageEditSpec.addEmbed(consumer);
-        legacyMessageEditSpec.setFlags(null);
+        legacyMessageEditSpec.setFlags((Message.Flag) null);
     }
 
     /**
@@ -417,7 +417,7 @@ class LegacyMessageEditSpecTest {
         //   setComponents(LayoutComponent[]).
         //   See https://diff.blue/R013 to resolve this issue.
 
-        (new LegacyMessageEditSpec()).setComponents(null);
+        (new LegacyMessageEditSpec()).setComponents((LayoutComponent) null);
     }
 
     /**
@@ -451,7 +451,7 @@ class LegacyMessageEditSpecTest {
 
         LegacyMessageEditSpec legacyMessageEditSpec = new LegacyMessageEditSpec();
         legacyMessageEditSpec.addEmbed(consumer);
-        legacyMessageEditSpec.setComponents(null);
+        legacyMessageEditSpec.setComponents((LayoutComponent) null);
     }
 
     /**

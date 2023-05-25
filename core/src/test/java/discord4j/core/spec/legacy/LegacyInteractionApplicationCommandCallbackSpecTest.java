@@ -146,7 +146,7 @@ class LegacyInteractionApplicationCommandCallbackSpecTest {
         //     LegacyInteractionApplicationCommandCallbackSpec.flags
         //     LegacyInteractionApplicationCommandCallbackSpec.tts
 
-        (new LegacyInteractionApplicationCommandCallbackSpec()).setComponents(null);
+        (new LegacyInteractionApplicationCommandCallbackSpec()).setComponents((LayoutComponent) null);
     }
 
     /**
@@ -170,7 +170,7 @@ class LegacyInteractionApplicationCommandCallbackSpecTest {
 
         LegacyInteractionApplicationCommandCallbackSpec legacyInteractionApplicationCommandCallbackSpec = new LegacyInteractionApplicationCommandCallbackSpec();
         legacyInteractionApplicationCommandCallbackSpec.addEmbed(consumer);
-        legacyInteractionApplicationCommandCallbackSpec.setComponents(null);
+        legacyInteractionApplicationCommandCallbackSpec.setComponents((LayoutComponent) null);
     }
 
     /**

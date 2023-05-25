@@ -426,7 +426,7 @@ class LegacyMessageCreateSpecTest {
         //     LegacyMessageCreateSpec.nonce
         //     LegacyMessageCreateSpec.tts
 
-        (new LegacyMessageCreateSpec()).setComponents(null);
+        (new LegacyMessageCreateSpec()).setComponents((LayoutComponent) null);
     }
 
     /**
@@ -452,7 +452,7 @@ class LegacyMessageCreateSpecTest {
 
         LegacyMessageCreateSpec legacyMessageCreateSpec = new LegacyMessageCreateSpec();
         legacyMessageCreateSpec.addEmbed(consumer);
-        legacyMessageCreateSpec.setComponents(null);
+        legacyMessageCreateSpec.setComponents((LayoutComponent) null);
     }
 
     /**
