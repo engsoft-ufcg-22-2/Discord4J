@@ -35,18 +35,22 @@ public class GatewayEventFilter extends TurboFilter {
     @Override
     public FilterReply decide(Marker marker, Logger log, Level level, String format, Object[] params, Throwable t) {
         String logName = log.getName();
-        if (loggers.contains(logName)) {
-            if (format != null) {
-                if (!excludedEvents.isEmpty() && excludedEvents.stream().anyMatch(format::contains)) {
-                    return FilterReply.DENY;
-                }
-                if (!includedEvents.isEmpty() && includedEvents.stream().noneMatch(format::contains)) {
-                    return FilterReply.DENY;
-                }
+        if (!loggers.contains(logName)) {
+            return FilterReply.NEUTRAL;
+        }
+
+        if (format != null) {
+            if (!excludedEvents.isEmpty() && excludedEvents.stream().anyMatch(format::contains)) {
+                return FilterReply.DENY;
+            }
+            if (!includedEvents.isEmpty() && includedEvents.stream().noneMatch(format::contains)) {
+                return FilterReply.DENY;
             }
         }
+
         return FilterReply.NEUTRAL;
     }
+
 
     public void addLogger(String logger) {
         this.loggers.add(logger);

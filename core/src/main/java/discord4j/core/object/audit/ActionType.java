@@ -1,20 +1,7 @@
-/*
- * This file is part of Discord4J.
- *
- * Discord4J is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * Discord4J is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Discord4J.  If not, see <http://www.gnu.org/licenses/>.
- */
 package discord4j.core.object.audit;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Represents the various type of audit log action.
@@ -59,18 +46,20 @@ public enum ActionType {
     INTEGRATION_CREATE(80),
     INTEGRATION_UPDATE(81),
     INTEGRATION_DELETE(82),
-
     AUTO_MODERATION_RULE_CREATE(140),
-
     AUTO_MODERATION_RULE_UPDATE(141),
-
     AUTO_MODERATION_RULE_DELETE(142),
-
     AUTO_MODERATION_BLOCK_MESSAGE(143),
-
     AUTO_MODERATION_FLAG_TO_CHANNEL(144),
-
     AUTO_MODERATION_USER_COMMUNICATION_DISABLED(145);
+
+    private static final Map<Integer, ActionType> ACTION_TYPE_MAP = new HashMap<>();
+
+    static {
+        for (ActionType actionType : ActionType.values()) {
+            ACTION_TYPE_MAP.put(actionType.getValue(), actionType);
+        }
+    }
 
     /**
      * Gets the type of action. It is guaranteed that invoking {@link #getValue()} from the returned enum will equal
@@ -80,69 +69,15 @@ public enum ActionType {
      * @return The type of action.
      */
     public static ActionType of(final int value) {
-        switch (value) {
-            case 1: return GUILD_UPDATE;
-            case 10: return CHANNEL_CREATE;
-            case 11: return CHANNEL_UPDATE;
-            case 12: return CHANNEL_DELETE;
-            case 13: return CHANNEL_OVERWRITE_CREATE;
-            case 14: return CHANNEL_OVERWRITE_UPDATE;
-            case 15: return CHANNEL_OVERWRITE_DELETE;
-            case 20: return MEMBER_KICK;
-            case 21: return MEMBER_PRUNE;
-            case 22: return MEMBER_BAN_ADD;
-            case 23: return MEMBER_BAN_REMOVE;
-            case 24: return MEMBER_UPDATE;
-            case 25: return MEMBER_ROLE_UPDATE;
-            case 26: return MEMBER_MOVE;
-            case 27: return MEMBER_DISCONNECT;
-            case 28: return BOT_ADD;
-            case 30: return ROLE_CREATE;
-            case 31: return ROLE_UPDATE;
-            case 32: return ROLE_DELETE;
-            case 40: return INVITE_CREATE;
-            case 41: return INVITE_UPDATE;
-            case 42: return INVITE_DELETE;
-            case 50: return WEBHOOK_CREATE;
-            case 51: return WEBHOOK_UPDATE;
-            case 52: return WEBHOOK_DELETE;
-            case 60: return EMOJI_CREATE;
-            case 61: return EMOJI_UPDATE;
-            case 62: return EMOJI_DELETE;
-            case 72: return MESSAGE_DELETE;
-            case 73: return MESSAGE_BULK_DELETE;
-            case 74: return MESSAGE_PIN;
-            case 75: return MESSAGE_UNPIN;
-            case 80: return INTEGRATION_CREATE;
-            case 81: return INTEGRATION_UPDATE;
-            case 82: return INTEGRATION_DELETE;
-            case 140: return AUTO_MODERATION_RULE_CREATE;
-            case 141: return AUTO_MODERATION_RULE_UPDATE;
-            case 142: return AUTO_MODERATION_RULE_DELETE;
-            case 143: return AUTO_MODERATION_BLOCK_MESSAGE;
-            case 144: return AUTO_MODERATION_FLAG_TO_CHANNEL;
-            case 145: return AUTO_MODERATION_USER_COMMUNICATION_DISABLED;
-            default: return UNKNOWN;
-        }
+        return ACTION_TYPE_MAP.getOrDefault(value, UNKNOWN);
     }
 
-    /** The underlying value as represented by Discord. */
     private final int value;
 
-    /**
-     * Constructs an {@code ActionType}.
-     *
-     * @param value The underlying value as represented by Discord.
-     */
     ActionType(final int value) {
         this.value = value;
     }
 
-    /**
-     * Gets the underlying value as represented by Discord.
-     *
-     * @return The underlying value as represented by Discord.
-     */
     public int getValue() {
         return value;
     }

@@ -8,6 +8,7 @@ package com.iwebpp.crypto;
 
 import java.io.UnsupportedEncodingException;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -1361,65 +1362,75 @@ public final class TweetNaclFast {
 		}
 	}*/
 
-    private static int crypto_stream_salsa20_xor(byte [] c,int cpos, byte [] m,int mpos, long b, byte [] n, byte [] k)
-    {
-        byte [] z = new byte[16], x = new byte[64];
+    private static int crypto_stream_salsa20_xor(byte[] c, int cpos, byte[] m, int mpos, long b, byte[] n, byte[] k) {
+        byte[] z = new byte[16];
+        byte[] x = new byte[64];
         int u, i;
-        for (i = 0; i < 16; i++) z[i] = 0;
-        for (i = 0; i < 8; i++) z[i] = n[i];
+
+        Arrays.fill(z, (byte) 0);
+        System.arraycopy(n, 0, z, 0, 8);
+
         while (b >= 64) {
-            crypto_core_salsa20(x,z,k,sigma);
-            for (i = 0; i < 64; i++) c[cpos+i] = (byte) ((m[mpos+i] ^ x[i]) & 0xff);
+            crypto_core_salsa20(x, z, k, sigma);
+            for (i = 0; i < 64; i++) {
+                c[cpos + i] = (byte) ((m[mpos + i] ^ x[i]) & 0xff);
+            }
+
             u = 1;
             for (i = 8; i < 16; i++) {
                 u = u + (z[i] & 0xff) | 0;
                 z[i] = (byte) (u & 0xff);
                 u >>>= 8;
             }
+
             b -= 64;
             cpos += 64;
             mpos += 64;
         }
-        if (b > 0) {
-            crypto_core_salsa20(x,z,k,sigma);
-            for (i = 0; i < b; i++) c[cpos+i] = (byte) ((m[mpos+i] ^ x[i]) & 0xff);
-        }
 
-        ///String dbgt = "";
-        ///for (int dbg = 0; dbg < c.length-cpos; dbg ++) dbgt += " "+c[dbg +cpos];
-        ///Log.d(TAG, "crypto_stream_salsa20_xor, c -> "+dbgt);
+        if (b > 0) {
+            crypto_core_salsa20(x, z, k, sigma);
+            for (i = 0; i < b; i++) {
+                c[cpos + i] = (byte) ((m[mpos + i] ^ x[i]) & 0xff);
+            }
+        }
 
         return 0;
     }
 
-    public static int crypto_stream_salsa20(byte [] c,int cpos, long b, byte [] n, byte [] k) {
-        byte [] z = new byte[16], x = new byte[64];
+
+    public static int crypto_stream_salsa20(byte[] c, int cpos, long b, byte[] n, byte[] k) {
+        byte[] z = new byte[16];
+        byte[] x = new byte[64];
         int u, i;
-        for (i = 0; i < 16; i++) z[i] = 0;
-        for (i = 0; i < 8; i++) z[i] = n[i];
+
+        Arrays.fill(z, (byte) 0);
+
+        System.arraycopy(n, 0, z, 0, 8);
+
         while (b >= 64) {
-            crypto_core_salsa20(x,z,k,sigma);
-            for (i = 0; i < 64; i++) c[cpos+i] = x[i];
+            crypto_core_salsa20(x, z, k, sigma);
+            System.arraycopy(x, 0, c, cpos, 64);
+
             u = 1;
             for (i = 8; i < 16; i++) {
                 u = u + (z[i] & 0xff) | 0;
                 z[i] = (byte) (u & 0xff);
                 u >>>= 8;
             }
+
             b -= 64;
             cpos += 64;
         }
-        if (b > 0) {
-            crypto_core_salsa20(x,z,k,sigma);
-            for (i = 0; i < b; i++) c[cpos+i] = x[i];
-        }
 
-        ///String dbgt = "";
-        ///for (int dbg = 0; dbg < c.length-cpos; dbg ++) dbgt += " "+c[dbg +cpos];
-        ///Log.d(TAG, "crypto_stream_salsa20, c -> "+dbgt);
+        if (b > 0) {
+            crypto_core_salsa20(x, z, k, sigma);
+            System.arraycopy(x, 0, c, cpos, (int) b);
+        }
 
         return 0;
     }
+
 
     public static int  crypto_stream(byte [] c,int cpos, long d, byte [] n, byte [] k) {
         byte [] s = new byte[32];
@@ -1491,220 +1502,64 @@ public final class TweetNaclFast {
             this.pad[7] = key[30] & 0xff | (key[31] & 0xff) << 8;
         }
 
-        public poly1305 blocks(byte [] m, int mpos, int bytes) {
-            int hibit = this.fin!=0 ? 0 : (1 << 11);
-            int t0, t1, t2, t3, t4, t5, t6, t7, c;
-            int d0, d1, d2, d3, d4, d5, d6, d7, d8, d9;
+        public poly1305 blocks(byte[] m, int mpos, int bytes) {
+            int hibit = this.fin != 0 ? 0 : (1 << 11);
+            int c;
 
-            int     h0 = this.h[0],
-                h1 = this.h[1],
-                h2 = this.h[2],
-                h3 = this.h[3],
-                h4 = this.h[4],
-                h5 = this.h[5],
-                h6 = this.h[6],
-                h7 = this.h[7],
-                h8 = this.h[8],
-                h9 = this.h[9];
-
-            int     r0 = this.r[0],
-                r1 = this.r[1],
-                r2 = this.r[2],
-                r3 = this.r[3],
-                r4 = this.r[4],
-                r5 = this.r[5],
-                r6 = this.r[6],
-                r7 = this.r[7],
-                r8 = this.r[8],
-                r9 = this.r[9];
+            int[] h = this.h;
+            int[] r = this.r;
+            int[] d = new int[10];
 
             while (bytes >= 16) {
-                t0 = m[mpos+ 0] & 0xff | (m[mpos+ 1] & 0xff) << 8; h0 += ( t0                     ) & 0x1fff;
-                t1 = m[mpos+ 2] & 0xff | (m[mpos+ 3] & 0xff) << 8; h1 += ((t0 >>> 13) | (t1 <<  3)) & 0x1fff;
-                t2 = m[mpos+ 4] & 0xff | (m[mpos+ 5] & 0xff) << 8; h2 += ((t1 >>> 10) | (t2 <<  6)) & 0x1fff;
-                t3 = m[mpos+ 6] & 0xff | (m[mpos+ 7] & 0xff) << 8; h3 += ((t2 >>>  7) | (t3 <<  9)) & 0x1fff;
-                t4 = m[mpos+ 8] & 0xff | (m[mpos+ 9] & 0xff) << 8; h4 += ((t3 >>>  4) | (t4 << 12)) & 0x1fff;
-                h5 += ((t4 >>>  1)) & 0x1fff;
-                t5 = m[mpos+10] & 0xff | (m[mpos+11] & 0xff) << 8; h6 += ((t4 >>> 14) | (t5 <<  2)) & 0x1fff;
-                t6 = m[mpos+12] & 0xff | (m[mpos+13] & 0xff) << 8; h7 += ((t5 >>> 11) | (t6 <<  5)) & 0x1fff;
-                t7 = m[mpos+14] & 0xff | (m[mpos+15] & 0xff) << 8; h8 += ((t6 >>>  8) | (t7 <<  8)) & 0x1fff;
-                h9 += ((t7 >>> 5)) | hibit;
+                int[] t = new int[8];
+                for (int i = 0; i < 8; i++) {
+                    t[i] = m[mpos + 2 * i] & 0xff | (m[mpos + 2 * i + 1] & 0xff) << 8;
+                }
+
+                int h0 = h[0], h1 = h[1], h2 = h[2], h3 = h[3], h4 = h[4];
+                int h5 = h[5], h6 = h[6], h7 = h[7], h8 = h[8], h9 = h[9];
+
+                h0 += t[0] & 0x1fff;
+                h1 += ((t[0] >>> 13) | (t[1] << 3)) & 0x1fff;
+                h2 += ((t[1] >>> 10) | (t[2] << 6)) & 0x1fff;
+                h3 += ((t[2] >>> 7) | (t[3] << 9)) & 0x1fff;
+                h4 += ((t[3] >>> 4) | (t[4] << 12)) & 0x1fff;
+                h5 += t[4] >>> 1 & 0x1fff;
+                h6 += ((t[4] >>> 14) | (t[5] << 2)) & 0x1fff;
+                h7 += ((t[5] >>> 11) | (t[6] << 5)) & 0x1fff;
+                h8 += ((t[6] >>> 8) | (t[7] << 8)) & 0x1fff;
+                h9 += ((t[7] >>> 5) | hibit);
 
                 c = 0;
 
-                d0 = c;
-                d0 += h0 * r0;
-                d0 += h1 * (5 * r9);
-                d0 += h2 * (5 * r8);
-                d0 += h3 * (5 * r7);
-                d0 += h4 * (5 * r6);
-                c = (d0 >>> 13); d0 &= 0x1fff;
-                d0 += h5 * (5 * r5);
-                d0 += h6 * (5 * r4);
-                d0 += h7 * (5 * r3);
-                d0 += h8 * (5 * r2);
-                d0 += h9 * (5 * r1);
-                c += (d0 >>> 13); d0 &= 0x1fff;
-
-                d1 = c;
-                d1 += h0 * r1;
-                d1 += h1 * r0;
-                d1 += h2 * (5 * r9);
-                d1 += h3 * (5 * r8);
-                d1 += h4 * (5 * r7);
-                c = (d1 >>> 13); d1 &= 0x1fff;
-                d1 += h5 * (5 * r6);
-                d1 += h6 * (5 * r5);
-                d1 += h7 * (5 * r4);
-                d1 += h8 * (5 * r3);
-                d1 += h9 * (5 * r2);
-                c += (d1 >>> 13); d1 &= 0x1fff;
-
-                d2 = c;
-                d2 += h0 * r2;
-                d2 += h1 * r1;
-                d2 += h2 * r0;
-                d2 += h3 * (5 * r9);
-                d2 += h4 * (5 * r8);
-                c = (d2 >>> 13); d2 &= 0x1fff;
-                d2 += h5 * (5 * r7);
-                d2 += h6 * (5 * r6);
-                d2 += h7 * (5 * r5);
-                d2 += h8 * (5 * r4);
-                d2 += h9 * (5 * r3);
-                c += (d2 >>> 13); d2 &= 0x1fff;
-
-                d3 = c;
-                d3 += h0 * r3;
-                d3 += h1 * r2;
-                d3 += h2 * r1;
-                d3 += h3 * r0;
-                d3 += h4 * (5 * r9);
-                c = (d3 >>> 13); d3 &= 0x1fff;
-                d3 += h5 * (5 * r8);
-                d3 += h6 * (5 * r7);
-                d3 += h7 * (5 * r6);
-                d3 += h8 * (5 * r5);
-                d3 += h9 * (5 * r4);
-                c += (d3 >>> 13); d3 &= 0x1fff;
-
-                d4 = c;
-                d4 += h0 * r4;
-                d4 += h1 * r3;
-                d4 += h2 * r2;
-                d4 += h3 * r1;
-                d4 += h4 * r0;
-                c = (d4 >>> 13); d4 &= 0x1fff;
-                d4 += h5 * (5 * r9);
-                d4 += h6 * (5 * r8);
-                d4 += h7 * (5 * r7);
-                d4 += h8 * (5 * r6);
-                d4 += h9 * (5 * r5);
-                c += (d4 >>> 13); d4 &= 0x1fff;
-
-                d5 = c;
-                d5 += h0 * r5;
-                d5 += h1 * r4;
-                d5 += h2 * r3;
-                d5 += h3 * r2;
-                d5 += h4 * r1;
-                c = (d5 >>> 13); d5 &= 0x1fff;
-                d5 += h5 * r0;
-                d5 += h6 * (5 * r9);
-                d5 += h7 * (5 * r8);
-                d5 += h8 * (5 * r7);
-                d5 += h9 * (5 * r6);
-                c += (d5 >>> 13); d5 &= 0x1fff;
-
-                d6 = c;
-                d6 += h0 * r6;
-                d6 += h1 * r5;
-                d6 += h2 * r4;
-                d6 += h3 * r3;
-                d6 += h4 * r2;
-                c = (d6 >>> 13); d6 &= 0x1fff;
-                d6 += h5 * r1;
-                d6 += h6 * r0;
-                d6 += h7 * (5 * r9);
-                d6 += h8 * (5 * r8);
-                d6 += h9 * (5 * r7);
-                c += (d6 >>> 13); d6 &= 0x1fff;
-
-                d7 = c;
-                d7 += h0 * r7;
-                d7 += h1 * r6;
-                d7 += h2 * r5;
-                d7 += h3 * r4;
-                d7 += h4 * r3;
-                c = (d7 >>> 13); d7 &= 0x1fff;
-                d7 += h5 * r2;
-                d7 += h6 * r1;
-                d7 += h7 * r0;
-                d7 += h8 * (5 * r9);
-                d7 += h9 * (5 * r8);
-                c += (d7 >>> 13); d7 &= 0x1fff;
-
-                d8 = c;
-                d8 += h0 * r8;
-                d8 += h1 * r7;
-                d8 += h2 * r6;
-                d8 += h3 * r5;
-                d8 += h4 * r4;
-                c = (d8 >>> 13); d8 &= 0x1fff;
-                d8 += h5 * r3;
-                d8 += h6 * r2;
-                d8 += h7 * r1;
-                d8 += h8 * r0;
-                d8 += h9 * (5 * r9);
-                c += (d8 >>> 13); d8 &= 0x1fff;
-
-                d9 = c;
-                d9 += h0 * r9;
-                d9 += h1 * r8;
-                d9 += h2 * r7;
-                d9 += h3 * r6;
-                d9 += h4 * r5;
-                c = (d9 >>> 13); d9 &= 0x1fff;
-                d9 += h5 * r4;
-                d9 += h6 * r3;
-                d9 += h7 * r2;
-                d9 += h8 * r1;
-                d9 += h9 * r0;
-                c += (d9 >>> 13); d9 &= 0x1fff;
+                for (int i = 0; i < 10; i++) {
+                    d[i] = c;
+                    for (int j = 0; j < 10; j++) {
+                        d[i] += h[j] * ((j <= i) ? r[i - j] : (5 * r[i + 10 - j]));
+                    }
+                    c = d[i] >>> 13;
+                    d[i] &= 0x1fff;
+                }
 
                 c = (((c << 2) + c)) | 0;
-                c = (c + d0) | 0;
-                d0 = c & 0x1fff;
+                c = (c + d[0]) | 0;
+                d[0] = c & 0x1fff;
                 c = (c >>> 13);
-                d1 += c;
+                d[1] += c;
 
-                h0 = d0;
-                h1 = d1;
-                h2 = d2;
-                h3 = d3;
-                h4 = d4;
-                h5 = d5;
-                h6 = d6;
-                h7 = d7;
-                h8 = d8;
-                h9 = d9;
+                for (int i = 0; i < 10; i++) {
+                    h[i] = d[i];
+                }
 
                 mpos += 16;
                 bytes -= 16;
             }
-            this.h[0] = h0;
-            this.h[1] = h1;
-            this.h[2] = h2;
-            this.h[3] = h3;
-            this.h[4] = h4;
-            this.h[5] = h5;
-            this.h[6] = h6;
-            this.h[7] = h7;
-            this.h[8] = h8;
-            this.h[9] = h9;
+
+            this.h = h;
 
             return this;
         }
+
 
         public poly1305 finish(byte [] mac, int macpos) {
             int [] g = new int[10];
