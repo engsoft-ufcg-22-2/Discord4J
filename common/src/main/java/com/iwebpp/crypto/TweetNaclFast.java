@@ -1547,9 +1547,7 @@ public final class TweetNaclFast {
                 c = (c >>> 13);
                 d[1] += c;
 
-                for (int i = 0; i < 10; i++) {
-                    h[i] = d[i];
-                }
+                System.arraycopy(d, 0, h, 0, 10);
 
                 mpos += 16;
                 bytes -= 16;
@@ -1559,6 +1557,7 @@ public final class TweetNaclFast {
 
             return this;
         }
+
 
 
         public poly1305 finish(byte [] mac, int macpos) {

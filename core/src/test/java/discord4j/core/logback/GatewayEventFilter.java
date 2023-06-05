@@ -37,10 +37,8 @@ public class GatewayEventFilter extends TurboFilter {
         String logName = log.getName();
         if (loggers.contains(logName)) {
             if (format != null) {
-                if (!excludedEvents.isEmpty() && excludedEvents.stream().anyMatch(format::contains)) {
-                    return FilterReply.DENY;
-                }
-                if (!includedEvents.isEmpty() && includedEvents.stream().noneMatch(format::contains)) {
+                if ((!excludedEvents.isEmpty() && excludedEvents.stream().anyMatch(format::contains))
+                || (!includedEvents.isEmpty() && includedEvents.stream().noneMatch(format::contains))) {
                     return FilterReply.DENY;
                 }
             }

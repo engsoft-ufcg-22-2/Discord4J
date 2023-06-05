@@ -83,71 +83,77 @@ public class GatewayRetrySpec extends Retry {
 
     @Override
     public Flux<Long> generateCompanion(Flux<RetrySignal> t) {
-        return t.concatMap(retryWhenState -> {
-            RetrySignal copy = retryWhenState.copy();
-            Throwable currentFailure = copy.failure();
+        return t.concatMap(this::processRetrySignal);
+    }
 
-            /*
-             * Gateway exceptions come in many flavors, some can be recovered through RESUME while others
-             * implicitly or explicitly invalidate a session and then only a RECONNECT is possible.
-             */
+    private Mono<Long> processRetrySignal(RetrySignal retryWhenState) {
+        RetrySignal copy = retryWhenState.copy();
+        Throwable currentFailure = copy.failure();
 
-            // First, if the current failure is not retryable, immediately forward the error
+        if (currentFailure == null) {
+            return Mono.error(new IllegalStateException("Retry.RetrySignal#failure() not expected to be null"));
+        }
 
-            if (currentFailure == null) {
-                return Mono.error(new IllegalStateException("Retry.RetrySignal#failure() not expected to be null"));
-            }
+        if (!isRetryable(currentFailure)) {
+            return Mono.error(currentFailure);
+        }
 
-            if (!isRetryable(currentFailure)) {
-                return Mono.error(currentFailure);
-            }
+        if (currentFailure instanceof InvalidSessionException) {
+            reconnectContext.reset();
+        }
 
-            if (currentFailure instanceof InvalidSessionException) {
-                reconnectContext.reset();
-            }
-            long iteration = reconnectContext.getAttempts();
+        long iteration = reconnectContext.getAttempts();
 
-            if (iteration >= reconnectOptions.getMaxRetries()) {
-                return Mono.error(Exceptions.retryExhausted("Retries exhausted: " +
-                        iteration + "/" + reconnectOptions.getMaxRetries(), copy.failure()));
-            }
+        if (iteration >= reconnectOptions.getMaxRetries()) {
+            String errorMessage = String.format("Retries exhausted: %d/%d", iteration, reconnectOptions.getMaxRetries());
+            return Mono.error(Exceptions.retryExhausted(errorMessage, copy.failure()));
+        }
 
-            // whenever we can recover with RESUME, we will use zero backoff for this attempt
+        Duration nextBackoff = computeNextBackoff(currentFailure, iteration);
+        GatewayConnection.State nextState = computeNextState(currentFailure);
 
-            Duration nextBackoff;
-            GatewayConnection.State nextState;
+        reconnectContext.next();
 
-            Duration minBackoff = reconnectOptions.getFirstBackoff();
-            Duration maxBackoff = reconnectOptions.getMaxBackoffInterval();
+        if (nextBackoff.isZero()) {
+            GatewayRetrySignal retrySignal = new GatewayRetrySignal(copy.failure(), iteration, nextBackoff, nextState);
+            return applyHooks(retrySignal, Mono.just(iteration), doPreRetry);
+        }
 
-            if (canResume(currentFailure)) {
-                // RESUME can happen immediately, but we still need backoff for iteration > 1 to avoid spam
-                if (iteration == 1) {
-                    nextBackoff = Duration.ZERO;
-                } else {
-                    nextBackoff = computeBackoff(iteration - 2, minBackoff, maxBackoff);
-                }
-                nextState = GatewayConnection.State.RESUMING;
+        Duration effectiveBackoff = computeEffectiveBackoff(nextBackoff);
+        GatewayRetrySignal retrySignal = new GatewayRetrySignal(copy.failure(), iteration, effectiveBackoff, nextState);
+
+        return applyHooks(retrySignal, Mono.delay(effectiveBackoff, reconnectOptions.getBackoffScheduler()), doPreRetry);
+    }
+
+    private Duration computeNextBackoff(Throwable currentFailure, long iteration) {
+        Duration minBackoff = reconnectOptions.getFirstBackoff();
+        Duration maxBackoff = reconnectOptions.getMaxBackoffInterval();
+
+        if (canResume(currentFailure)) {
+            if (iteration == 1) {
+                return Duration.ZERO;
             } else {
-                nextBackoff = computeBackoff(iteration - 1, minBackoff, maxBackoff);
-                nextState = GatewayConnection.State.RECONNECTING;
+                return computeBackoff(iteration - 2, minBackoff, maxBackoff);
             }
+        } else {
+            return computeBackoff(iteration - 1, minBackoff, maxBackoff);
+        }
+    }
 
-            reconnectContext.next();
+    private GatewayConnection.State computeNextState(Throwable currentFailure) {
+        if (canResume(currentFailure)) {
+            return GatewayConnection.State.RESUMING;
+        } else {
+            return GatewayConnection.State.RECONNECTING;
+        }
+    }
 
-            if (nextBackoff.isZero()) {
-                return applyHooks(new GatewayRetrySignal(copy.failure(), iteration, nextBackoff, nextState),
-                        Mono.just(iteration),
-                        doPreRetry);
-            }
+    private Duration computeEffectiveBackoff(Duration nextBackoff) {
+        Duration minBackoff = reconnectOptions.getFirstBackoff();
+        Duration maxBackoff = reconnectOptions.getMaxBackoffInterval();
+        double jitterFactor = reconnectOptions.getJitterFactor();
 
-            Duration effectiveBackoff = nextBackoff.plusMillis(computeJitter(nextBackoff, minBackoff, maxBackoff,
-                    reconnectOptions.getJitterFactor()));
-
-            return applyHooks(new GatewayRetrySignal(copy.failure(), iteration, effectiveBackoff, nextState),
-                    Mono.delay(effectiveBackoff, reconnectOptions.getBackoffScheduler()),
-                    doPreRetry);
-        });
+        return nextBackoff.plusMillis(computeJitter(nextBackoff, minBackoff, maxBackoff, jitterFactor));
     }
 
     static long computeJitter(Duration nextBackoff, Duration minBackoff, Duration maxBackoff, double factor) {
